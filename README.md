@@ -1,218 +1,203 @@
-# 🏦 Loan Default Risk Prediction System
+# Loan Default Risk Prediction API
 
-Production-Style Machine Learning Pipeline with FastAPI, Streamlit, and Docker
+A portfolio project that demonstrates an end-to-end binary-classification workflow: data preprocessing, baseline model training, REST inference, an interactive user interface, and containerized local execution.
 
----
+> **Important:** This is an educational baseline built from a small public loan-approval dataset. It is not a lending decision system and must not be used for real credit decisions.
 
-## 📌 Overview
+## Business Problem
 
-This project is an end-to-end machine learning application that predicts the probability of loan default based on applicant financial and demographic information.
+Lenders need consistent ways to identify applications that may require additional review. This project converts historical application data into a baseline risk signal and exposes the result through an API and a simple web interface.
 
-It demonstrates a complete production ML workflow including:
+The source label is `Loan_Status`:
 
-* Data preprocessing and feature engineering
-* Model training and evaluation
-* Model persistence
-* REST API deployment
-* Interactive web interface
-* Containerized deployment using Docker
+- `Y` (approved) is converted to default-risk label `0`
+- `N` (not approved) is converted to default-risk label `1`
 
-The system supports real-time loan risk prediction through both an API and a user-friendly web interface.
+This is a modeling proxy—not observed post-loan default behavior. That limitation matters when interpreting the output.
 
----
+## What the Project Demonstrates
 
-## 🎯 Problem Statement
+- Median imputation for missing numeric values
+- Most-frequent imputation and one-hot encoding for categorical values
+- Stratified train/test splitting
+- Class-weighted Logistic Regression as an explainable baseline
+- FastAPI endpoints for schema inspection and prediction
+- Streamlit interface for entering applicant information
+- Docker Compose for running the API and UI together
 
-Financial institutions must assess whether a loan applicant is likely to default.
-This project builds a predictive model that analyzes applicant attributes such as income, credit history, loan amount, and employment status to estimate default risk.
+## Architecture
 
----
+```mermaid
+flowchart TD
+    A["Loan application dataset"] --> B["Preprocessing pipeline"]
+    B --> C["Logistic Regression"]
+    C --> D["Saved model artifact"]
+    D --> E["FastAPI /predict"]
+    E --> F["Streamlit interface"]
+```
 
-## 🧠 Machine Learning Pipeline
+## Evaluation
 
-1. Load historical loan dataset
-2. Handle missing values
-3. Encode categorical variables
-4. Train classification model (Logistic Regression)
-5. Evaluate model performance
-6. Save trained model and feature schema
-7. Serve predictions via API
+Using an 80/20 stratified split with `random_state=42`, the corrected baseline produced:
 
----
+| Metric | Holdout result |
+|---|---:|
+| Accuracy | 0.740 |
+| ROC-AUC | 0.766 |
+| Default-class precision | 0.590 |
+| Default-class recall | 0.530 |
+| Default-class F1 | 0.560 |
 
-## 🏗 System Architecture
+These results show that the application works as a technical baseline, but the default-class recall is too weak for high-stakes use. Accuracy alone is not sufficient because the classes are imbalanced.
 
-Historical Dataset
-↓
-Model Training Pipeline (Scikit-learn)
-↓
-Saved Model Artifact
-↓
-FastAPI Prediction Service
-↓
-Streamlit Web Interface
-↓
-User Prediction Request
+## Technology Stack
 
----
+| Layer | Tools |
+|---|---|
+| Language and analysis | Python, Pandas, NumPy |
+| Machine learning | Scikit-learn |
+| API | FastAPI, Uvicorn, Pydantic |
+| Interface | Streamlit |
+| Model persistence | Joblib |
+| Packaging | Docker, Docker Compose |
 
-## ⚙️ Technology Stack
+## Repository Structure
 
-| Component            | Technology             |
-| -------------------- | ---------------------- |
-| Programming Language | Python                 |
-| Data Processing      | Pandas, NumPy          |
-| Machine Learning     | Scikit-learn           |
-| Model Serialization  | Joblib                 |
-| API Backend          | FastAPI                |
-| Web UI               | Streamlit              |
-| Containerization     | Docker, Docker Compose |
-
----
-
-## 📊 Model Performance
-
-Example evaluation results:
-
-* Accuracy ≈ 82%
-* ROC-AUC ≈ 0.86
-
-Performance may vary depending on dataset split.
-
----
-
-## 🚀 Features
-
-✔ End-to-end ML training pipeline
-✔ Real-time prediction API
-✔ Interactive web interface
-✔ Containerized deployment
-✔ Reproducible environment
-✔ Production-ready architecture
-
----
-
-## 📂 Project Structure
-
+```text
 loan-default-prediction-api/
+├── api/
+│   ├── main.py
+│   └── schemas.py
+├── data/raw_Data/
+│   └── loan_default.csv
+├── models/
+│   ├── feature_columns.json
+│   └── loan_default_model.joblib
+├── src/
+│   ├── config.py
+│   ├── train.py
+│   └── utils.py
+├── ui/
+│   └── app.py
+├── Dockerfile.api
+├── Dockerfile.ui
+├── docker-compose.yml
+└── requirements.txt
+```
 
-api/ → FastAPI prediction service
-src/ → Training pipeline and utilities
-ui/ → Streamlit web application
-models/ → Trained model artifacts
-Dockerfile.api
-Dockerfile.ui
-docker-compose.yml
-requirements.txt
-README.md
+## Run Locally
 
----
+### 1. Clone and enter the repository
 
-## ▶️ Running the Project Locally
+```bash
+git clone https://github.com/vishnuvardhan164/loan-default-prediction-api.git
+cd loan-default-prediction-api
+```
 
-### 1️⃣ Create virtual environment
+### 2. Create a virtual environment
 
+Windows:
+
+```powershell
 python -m venv .venv
-.venv\Scripts\activate   (Windows)
+.venv\Scripts\activate
+```
 
----
+macOS or Linux:
 
-### 2️⃣ Install dependencies
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
 
+### 3. Install dependencies and retrain
+
+```bash
 pip install -r requirements.txt
-
----
-
-### 3️⃣ Train model
-
 python -m src.train
+```
 
----
+Retraining is required to regenerate the model artifact with the documented default-risk label definition.
 
-### 4️⃣ Start API
+### 4. Start the API
 
+```bash
 uvicorn api.main:app --reload
+```
 
----
+- API health check: http://127.0.0.1:8000/
+- Expected features: http://127.0.0.1:8000/schema
+- Interactive API docs: http://127.0.0.1:8000/docs
 
-### 5️⃣ Start Streamlit UI
+### 5. Start the Streamlit interface
 
+In a second terminal:
+
+```bash
 streamlit run ui/app.py
+```
 
----
+Open http://localhost:8501.
 
-API documentation
-http://127.0.0.1:8000/docs
+## Run with Docker
 
-Web UI
-http://localhost:8501
+Retrain locally first so the corrected model artifact is available, then run:
 
----
-
-## 🐳 Running with Docker (Recommended)
-
-Run entire system with one command:
-
+```bash
 docker compose up --build
+```
 
----
+- FastAPI: http://localhost:8000
+- Streamlit: http://localhost:8501
 
-Then open:
+## Prediction Request
 
-FastAPI Docs
-http://localhost:8000/docs
-
-Streamlit UI
-http://localhost:8501
-
----
-
-## 🔮 Prediction API Example
-
-POST /predict
-
+```json
 {
-"data": {
-"Gender": "Male",
-"Married": "Yes",
-"Dependents": "0",
-"Education": "Graduate",
-"Self_Employed": "No",
-"ApplicantIncome": 5000,
-"CoapplicantIncome": 1500,
-"LoanAmount": 120,
-"Loan_Amount_Term": 360,
-"Credit_History": 1,
-"Property_Area": "Urban"
+  "data": {
+    "Gender": "Male",
+    "Married": "Yes",
+    "Dependents": "0",
+    "Education": "Graduate",
+    "Self_Employed": "No",
+    "ApplicantIncome": 5000,
+    "CoapplicantIncome": 1500,
+    "LoanAmount": 120,
+    "Loan_Amount_Term": 360,
+    "Credit_History": 1,
+    "Property_Area": "Urban"
+  }
 }
+```
+
+Example response shape:
+
+```json
+{
+  "default_prediction": 0,
+  "default_probability": 0.2174
 }
+```
 
-Response:
+- `default_prediction = 1` indicates the higher-risk proxy class.
+- `default_probability` is the model's estimated probability for that class.
 
-default_prediction
-default_probability
+## Current Limitations
 
----
+- The target is approval status, not verified post-loan default.
+- The dataset is small and may not represent current lending populations.
+- No fairness, subgroup, calibration, or temporal-stability evaluation is included.
+- No authentication, persistent logging, automated tests, CI/CD, or production monitoring is implemented.
+- User inputs are accepted through a flexible dictionary rather than a strict feature schema.
+- The baseline model needs further tuning and comparison with alternative models.
 
-## 🌍 Deployment
+## Responsible Use
 
-The application can be deployed using Docker on cloud platforms such as:
+Real lending systems require validated default outcomes, legal and compliance review, fairness testing, explainability, privacy controls, monitoring, and human oversight. This repository demonstrates engineering and analytical workflow only.
 
-* Render
-* Railway
-* AWS
-* Azure
-* Google Cloud
+## Author
 
----
+**Sai Vishnu Vardhan Katroju**
 
-## 👤 Author
-
-Sai Vishnu Vardhan Katroju
-Machine Learning | Data Science | AI Systems
-
----
-
-## ⭐ If you found this project useful
-
-Please consider giving it a star ⭐
+- [GitHub profile](https://github.com/vishnuvardhan164)
+- [LinkedIn](https://www.linkedin.com/in/sai-vishnu-katroju-5299441a4/)
