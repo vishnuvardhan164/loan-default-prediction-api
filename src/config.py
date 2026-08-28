@@ -2,7 +2,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 
-RAW_DATA_PATH = BASE_DIR / "data" / "raw" / "loan_default.csv"
+RAW_DATA_PATH = BASE_DIR / "data" / "raw_Data" / "loan_default.csv"
 MODEL_DIR = BASE_DIR / "models"
 
 MODEL_PATH = MODEL_DIR / "loan_default_model.joblib"
